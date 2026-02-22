@@ -189,11 +189,49 @@
   .slot-edit-btn{background:#eaf4ff;color:var(--blue);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
   .slot-del-btn{background:#fdf2f2;color:var(--red);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
   .hidden{display:none!important;}
+
+  /* Slot Select Page */
+  .slot-select-page{padding:0 0 24px;}
+  .slot-select-hero{background:linear-gradient(160deg,#ECD9AD 0%,#e8d0a0 100%);padding:36px 24px 28px;text-align:center;position:relative;overflow:hidden;}
+  .slot-select-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.08);}
+  .slot-select-hero::after{content:'';position:absolute;bottom:-50px;left:-30px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.05);}
+  .slot-select-label{font-size:11px;letter-spacing:3px;color:rgba(100,70,60,0.6);margin-bottom:8px;font-weight:600;}
+  .slot-select-title{font-size:26px;font-weight:900;color:#5a3a2a;letter-spacing:1px;position:relative;}
+  .slot-select-sub{font-size:13px;color:rgba(90,58,42,0.65);margin-top:8px;font-weight:500;}
+  .slot-select-list{padding:20px 16px;display:flex;flex-direction:column;gap:12px;}
+  .slot-select-card{background:#fff;border-radius:18px;padding:18px 20px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 16px rgba(0,0,0,0.08);cursor:pointer;border:2px solid transparent;transition:all .2s;font-family:inherit;width:100%;text-align:left;}
+  .slot-select-card:active{transform:scale(0.97);}
+  .slot-select-card-icon{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--red),var(--red-dark));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 4px 12px rgba(162,103,117,0.35);}
+  .slot-select-card-body{flex:1;min-width:0;}
+  .slot-select-card-name{font-weight:900;font-size:16px;color:var(--text);margin-bottom:3px;}
+  .slot-select-card-hint{font-size:12px;color:var(--sub);}
+  .slot-select-card-arrow{font-size:20px;color:#ccc;flex-shrink:0;}
+  .slot-select-empty{text-align:center;padding:50px 24px;color:var(--sub);}
+  .slot-select-loading{text-align:center;padding:20px 0;color:var(--sub);font-size:13px;}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="notif" id="notif"></div>
+
+  <!-- SLOT SELECT VIEW (真正的首頁) -->
+  <div id="slotSelectView">
+    <div class="slot-select-page">
+      <div class="slot-select-hero">
+        <div class="slot-select-label">LINE 點餐系統</div>
+        <div class="slot-select-title" id="slotSelectStoreName">🍱 店家點餐系統</div>
+        <div id="slotSelectStatusBadge" style="display:inline-block;margin-top:10px;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(255,255,255,0.55);color:#7a4e5b;">🟢 營業中</div>
+        <div class="slot-select-sub" style="margin-top:10px;">請選擇今日店家</div>
+      </div>
+      <!-- 休息中橫幅 -->
+      <div id="slotClosedBanner" class="hidden" style="margin:12px 16px 0;background:#fdf4f7;border:1.5px solid #D6AABE;border-radius:12px;padding:12px 16px;text-align:center;font-size:13px;font-weight:700;color:#A26775;">
+        🔴 目前休息中，暫停接受訂單
+      </div>
+      <div class="slot-select-list" id="slotSelectList">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+  </div>
 
   <!-- HEADER (隱藏在首頁，進入子頁面才顯示) -->
   <div class="header hidden" id="header">
@@ -203,15 +241,16 @@
     </div>
     <div class="header-top">
       <div class="header-btns">
-        <button class="header-btn" onclick="goHome()">🏠 首頁</button>
+        <button class="header-btn" onclick="goHome()">🏠 菜單</button>
+        <button class="header-btn" onclick="goLookup()">📋 我的訂單</button>
         <button class="header-btn" id="adminBtn" onclick="toggleAdmin()">⚙️ 店家管理</button>
       </div>
       <span id="cartBadge" style="display:none;">0</span>
     </div>
   </div>
 
-  <!-- HOME VIEW -->
-  <div id="homeView">
+  <!-- HOME VIEW (四格主選單，點選菜單後才進入) -->
+  <div id="homeView" class="hidden">
     <!-- 首頁頂部 -->
     <div style="background:linear-gradient(160deg,#ECD9AD 0%,#e8d0a0 100%);padding:48px 24px 36px;text-align:center;position:relative;overflow:hidden;">
       <!-- 裝飾圓圈 -->
@@ -250,6 +289,16 @@
         <div class="home-tile-icon" style="background:linear-gradient(135deg,#76A9A2,#4e7f79);">⚙️</div>
         <div class="home-tile-label">店家管理</div>
         <div class="home-tile-sub">訂單・菜單管理</div>
+      </button>
+
+      <!-- 選擇店家（橫跨兩欄） -->
+      <button onclick="goHome()" class="home-tile" style="grid-column:1/-1;min-height:90px;background:linear-gradient(135deg,#fdf6e8,#fff);border:2px solid #e8d5a0;flex-direction:row;justify-content:flex-start;padding:0 24px;gap:18px;">
+        <div class="home-tile-icon" style="background:linear-gradient(135deg,#e8c97a,#B69F7F);width:52px;height:52px;font-size:26px;flex-shrink:0;">🏬</div>
+        <div style="text-align:left;">
+          <div class="home-tile-label" style="font-size:16px;">選擇店家</div>
+          <div class="home-tile-sub">回首頁重新選擇店家</div>
+        </div>
+        <div style="margin-left:auto;font-size:22px;color:#ccc;">›</div>
       </button>
     </div>
 
@@ -412,6 +461,9 @@
         <div id="slotList"></div>
 
         <!-- Add new slot -->
+        <div style="text-align:right;margin-bottom:6px;">
+          <button onclick="resetSlotsToDefault()" style="background:none;border:none;color:var(--sub);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:underline;">↩ 恢復預設清單</button>
+        </div>
         <div class="form-box" style="margin-top:8px;">
           <div class="form-title">＋ 新增菜單連結</div>
           <div class="form-group">
@@ -627,12 +679,15 @@ function applySettings(s, showPopup){
   // 公告彈窗：只有在 showPopup=true 且有公告時才彈出
   if(showPopup){
     const ann = s['公告訊息'] || '';
+    const storeName = s['店名'] || '';
     if(ann){
-      const lastAnn = sessionStorage.getItem('lastAnnouncement');
-      if(lastAnn !== ann){
+      // 用「店名+公告內容」當 key，每家店各自記，不互相影響
+      const annKey = 'ann_' + storeName + '_' + ann;
+      const seen = sessionStorage.getItem(annKey);
+      if(!seen){
         document.getElementById('announcementText').textContent = ann;
         document.getElementById('announcementPopup').style.display = 'flex';
-        sessionStorage.setItem('lastAnnouncement', ann);
+        sessionStorage.setItem(annKey, '1');
       }
     }
   }
@@ -678,6 +733,11 @@ function applyShopStatus(){
   const homeBanner = document.getElementById('homeClosedBanner');
   if(homeBadge) homeBadge.textContent = shopIsOpen ? '🟢 營業中' : '🔴 休息中';
   if(homeBanner) homeBanner.classList.toggle('hidden', shopIsOpen);
+  // 菜單選擇頁狀態
+  const slotBadge = document.getElementById('slotSelectStatusBadge');
+  const slotBanner = document.getElementById('slotClosedBanner');
+  if(slotBadge) slotBadge.textContent = shopIsOpen ? '🟢 營業中' : '🔴 休息中';
+  if(slotBanner) slotBanner.classList.toggle('hidden', shopIsOpen);
 }
 
 function toggleShopStatus(){
@@ -886,17 +946,98 @@ function resetAll(){
   document.getElementById('currentPersonName').value='';
   setPersonType('self');
   updateCartUI(); renderMenu();
-  goMenu();
+  goHome();
 }
 function goHome(){
-  hide('menuView'); hide('cartView'); hide('doneView'); hide('adminView'); hide('lookupView');
+  hide('menuView'); hide('cartView'); hide('doneView'); hide('adminView'); hide('lookupView'); hide('homeView');
+  show('slotSelectView');
+  document.getElementById('header').classList.add('hidden');
+  applyShopStatus();
+  renderSlotSelectPage();
+}
+
+function goSlotSelect(){
+  // 「立即點餐」直接進四格主選單（不再需要此流程，保留以防舊呼叫）
+  goFourTiles();
+}
+
+function goFourTiles(){
+  hide('slotSelectView'); hide('menuView'); hide('cartView'); hide('doneView'); hide('adminView'); hide('lookupView');
   show('homeView');
   document.getElementById('header').classList.add('hidden');
   applyShopStatus();
 }
 
+function renderSlotSelectPage(){
+  // 標題永遠固定為「店家點餐系統」，不用 SETTINGS 店名覆蓋
+  const el1 = document.getElementById('slotSelectStoreName');
+  if(el1) el1.textContent = '🍱 店家點餐系統';
+
+  const list = document.getElementById('slotSelectList');
+  if(!list) return;
+
+  if(menuSlots.length === 0){
+    list.innerHTML = '<div class="slot-select-empty">' +
+      '<div style="font-size:56px;margin-bottom:14px;">🍱</div>' +
+      '<div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px;">尚未建立菜單</div>' +
+      '<div style="font-size:12px;color:var(--sub);">請店家在後台「設定」建立菜單連結</div>' +
+    '</div>';
+    return;
+  }
+
+  const icons = ['🍱','🥩','🥗','🍜','🍣','🥘','🍛','🥙','🍔','🍝'];
+  list.innerHTML = menuSlots.map(function(s, i){
+    const isActive = i === activeSlotIndex;
+    const icon = icons[i % icons.length];
+    return '<button class="slot-select-card" onclick="selectSlotAndGo(' + i + ')" style="' + (isActive ? 'border-color:var(--green);background:#f0faf5;' : '') + '">' +
+      '<div class="slot-select-card-icon" style="' + (isActive ? 'background:linear-gradient(135deg,var(--green),#4e7f79);' : '') + '">' + icon + '</div>' +
+      '<div class="slot-select-card-body">' +
+        '<div class="slot-select-card-name">' + s.name + '</div>' +
+        '<div class="slot-select-card-hint">' + (isActive ? '✅ 上次選擇' : '點選進入此菜單') + '</div>' +
+      '</div>' +
+      '<div class="slot-select-card-arrow">›</div>' +
+    '</button>';
+  }).join('');
+}
+
+async function selectSlotAndGo(idx){
+  // 顯示 loading
+  const list = document.getElementById('slotSelectList');
+  if(list) list.innerHTML = '<div class="slot-select-loading"><div style="font-size:32px;margin-bottom:8px;">🔄</div>正在載入菜單，請稍候...</div>';
+
+  // 切換 slot
+  activeSlotIndex = idx;
+  gasUrl = menuSlots[idx].url;
+  localStorage.setItem('gasUrl', gasUrl);
+  saveSlots();
+
+  // 從 GAS 載入此菜單的設定與品項
+  try {
+    const data = await fetchGAS(gasUrl);
+    if(data.success && data.menu && Object.keys(data.menu).length > 0){
+      MENU = data.menu;
+      activeTab = Object.keys(MENU)[0];
+      mgrTab = Object.keys(MENU)[0];
+      nextId = Math.max(...Object.values(MENU).flat().map(i=>i.id), 30) + 1;
+      localStorage.setItem('menuData', JSON.stringify(MENU));
+    }
+    if(data.settings){
+      SETTINGS = data.settings;
+      localStorage.setItem('storeSettings', JSON.stringify(SETTINGS));
+      // showPopup=true → 公告跳出
+      applySettings(SETTINGS, true);
+    }
+  } catch(e){
+    console.log('載入失敗，使用本地資料', e);
+  }
+
+  renderTabs(); renderMenu();
+  hide('slotSelectView');
+  goFourTiles();
+}
+
 function goMenu(){
-  hide('homeView');
+  hide('homeView'); hide('slotSelectView');
   document.getElementById('header').classList.remove('hidden');
   show('menuView'); hide('cartView'); hide('doneView'); hide('adminView'); hide('lookupView');
   document.getElementById('adminBtn').classList.remove('active');
@@ -1043,13 +1184,37 @@ async function submitOrder(){
 const ADMIN_PASSWORD = '1234'; // ← 你可以改成自己的密碼
 let adminUnlocked = false;
 let gasUrl = localStorage.getItem('gasUrl') || '';
-// Menu slots: [{name, url}], max 10
-var menuSlots = JSON.parse(localStorage.getItem('menuSlots') || '[]');
+// ── 預設菜單清單（寫死在 HTML，所有人都看得到）──────────────────────────────
+const DEFAULT_SLOTS = [
+  { name: '萬家鄉早餐店',     url: 'https://script.google.com/macros/s/AKfycbzSLVxH3Alu4Nt2TQmtid-w983UY9nF7ck9F2WMFUl9Q12JaOHUZysUhkvSWDruZMo5/exec' },
+  { name: '丸食粉漿蛋餅早餐店', url: 'https://script.google.com/macros/s/AKfycbx92aUA9XZ5RIO-L9ne5_x9gKfV3UrL1XEoOWh58neSwAPMWgGulFM6SMglBEuSCPw7kw/exec' },
+  { name: '禾家早午餐',        url: 'https://script.google.com/macros/s/AKfycbw6zJJZdyz9JUxONoG82q2AyYLM6gq3wP1kFagjyS3OLnlDRtOH3rhUF5XLwuyc1_BD-g/exec' },
+  { name: '樂芙晨食早午餐',    url: 'https://script.google.com/macros/s/AKfycbykTIpWBUtroq1oVbKQ5Gp9EEb04Csf7ZxhCYYiQllWtb7eTC6cqcmwj5iuVLcB_tZp/exec' },
+  { name: 'A-bao梅山店',      url: 'https://script.google.com/macros/s/AKfycbx1fpMDkJETWMCC9l30Y1kiWoHR_fh76haMvoODaPXlyEa7y5G2a6nBxjwF57-A-iUQ6g/exec' },
+  { name: '早安山丘梅山店',    url: 'https://script.google.com/macros/s/AKfycbwTDxQJOMT5Tyu5IvYFy3xCP0cQA0blzhRMm7XmYhMg15zadWiXJbzcpDpWnHeV_2tajA/exec' },
+  { name: '早安有喜',          url: 'https://script.google.com/macros/s/AKfycbz-JHdjkkl9JQaDLvpWfBBNjqN-u-1u6ZzU39fe1CsVJyqN9TowxKnx3UdZVKm5OCzTAQ/exec' },
+  { name: '溪客來坐',          url: 'https://script.google.com/macros/s/AKfycbyWl4bmYDXlZ7HkvNfOmCHFGJ46OaJ8RJgNc7FceKP2f-mQrwH-XNi8I1RPytFf1baxxA/exec' },
+  { name: '麥當勞早餐',        url: 'https://script.google.com/macros/s/AKfycbyZTpMoNf_2JA2GLdj7UvEN-VrqmL2vgRBHHcsWvWQk-j3o9cy7SQJtrxBk6GMhIz0A/exec' },
+  { name: '比菲多團購',        url: 'https://script.google.com/macros/s/AKfycbwaZEKtZCTsqmGlDwq9NyZIquE_7QuiwXxSdnu6UhSTeEQrVuSf2NNxwbro4YHLpnla8A/exec' },
+];
+
+// Menu slots: 永遠用寫死的 DEFAULT_SLOTS，localStorage 只記「上次選的 index」
+var menuSlots = DEFAULT_SLOTS.slice();
 var activeSlotIndex = parseInt(localStorage.getItem('activeSlotIndex') || '-1');
 
 function saveSlots(){
-  localStorage.setItem('menuSlots', JSON.stringify(menuSlots));
+  // 不把 menuSlots 存到 localStorage（清單寫死在 HTML）
+  // 只記住使用者上次選的 index
   localStorage.setItem('activeSlotIndex', String(activeSlotIndex));
+}
+
+function resetSlotsToDefault(){
+  localStorage.removeItem('activeSlotIndex');
+  menuSlots = DEFAULT_SLOTS.slice();
+  activeSlotIndex = -1;
+  renderSlots();
+  renderSlotSelectPage();
+  showNotif('✅ 已恢復預設菜單清單');
 }
 
 function addSlot(){
@@ -1057,13 +1222,13 @@ function addSlot(){
   const url  = document.getElementById('newSlotUrl').value.trim();
   if(!name){ showNotif('請輸入名稱！'); return; }
   if(!url){ showNotif('請貼上 Apps Script 網址！'); return; }
-  if(menuSlots.length >= 10){ showNotif('最多只能儲存 10 組！'); return; }
+  if(menuSlots.length >= 20){ showNotif('最多只能儲存 20 組！'); return; }
   menuSlots.push({ name, url });
   document.getElementById('newSlotName').value = '';
   document.getElementById('newSlotUrl').value = '';
-  saveSlots();
   renderSlots();
-  showNotif('✅ 已新增「' + name + '」！');
+  renderSlotSelectPage();
+  showNotif('✅ 已新增「' + name + '」（僅此瀏覽器有效）');
 }
 
 function useSlot(idx){
@@ -1137,7 +1302,7 @@ function toggleAdmin(){
     if(pw !== ADMIN_PASSWORD){ showNotif('密碼錯誤！'); return; }
     adminUnlocked = true;
   }
-  hide('homeView'); hide('menuView'); hide('cartView'); hide('doneView'); show('adminView');
+  hide('homeView'); hide('menuView'); hide('cartView'); hide('doneView'); hide('slotSelectView'); show('adminView');
   document.getElementById('header').classList.remove('hidden');
   document.getElementById('adminBtn').classList.add('active');
   renderAdmin();
@@ -1435,7 +1600,7 @@ function saveItem(){
 
 // ── Order Lookup & Edit ───────────────────────────────────────────────────
 function goLookup(){
-  hide('homeView');
+  hide('homeView'); hide('slotSelectView');
   document.getElementById('header').classList.remove('hidden');
   hide('menuView'); hide('cartView'); hide('doneView'); hide('adminView'); hide('lookupView');
   show('lookupView');
@@ -1674,14 +1839,16 @@ function showNotif(msg){
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
-applySettings(SETTINGS, true);
+applySettings(SETTINGS, false); // 不在此觸發公告，公告在點選菜單時觸發
 applyShopStatus();
-// 初始顯示首頁
+// 初始顯示菜單選擇頁（真正的首頁）
+hide('homeView');
 hide('menuView');
-show('homeView');
+show('slotSelectView');
+renderSlotSelectPage();
 renderTabs(); renderMenu();
 updateCartUI();
-loadMenuFromSheets();
+// 不在啟動時自動載入，讓使用者點選菜單再載入
 </script>
 </body>
 </html>
